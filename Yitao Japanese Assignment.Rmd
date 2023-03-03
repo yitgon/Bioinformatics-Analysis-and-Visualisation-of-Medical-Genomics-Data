@@ -1,0 +1,232 @@
+---
+title: "Japanese assignment"
+author: "Yitao"
+date: "2023-03-02"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+```
+
+#Task 4
+#What is the square root of 10?
+```{r}
+sqrt(10)
+```
+
+#2. What is the logarithm of 32 to the base 2?
+
+```{r}
+log2(32)
+```
+
+#3. What is the sum of the numbers from 1 to 1000?
+```{r}
+sum(1:1000)
+```
+
+#4. What is the sum of all even numbers from 2 to 1000?
+
+```{r}
+sum <- 0
+for (i in 2:1000) {
+  if (i %% 2 == 0) {
+    sum <- sum + i
+  }
+}
+print(sum)
+```
+
+#5. How many pairwise comparisons are there for 100 genes?
+
+```{r}
+choose(100,3)
+```
+
+#Task 5 - Using R example datasets
+
+1. Use the R internal CO2 dataset (“data(CO2)”).
+```{r}
+data("CO2")
+```
+
+#2. Describe briefly the content of the CO2 dataset using the help function.
+```{r}
+summary(CO2)
+```
+
+#3. What is the average and median CO2 uptake of the plants from Quebec and Mississippi?
+```{r}
+tapply(CO2$uptake, CO2$Type, mean)
+tapply(CO2$uptake, CO2$Type, median)
+
+```
+
+#Task 6 - R Functions
+#1. Write a function that calculates the ratio of the mean and the median of a given vector.
+
+```{r}
+meanmedianratio <- function(x) {
+  ratio <- mean(x) / median(x)
+  return(ratio)
+}
+
+meanmedianratio(c(2,3,4,5,6,8,10,20,300))
+```
+
+
+#2. Write a function that ignores the lowest and the highest value from a given vector and calculate the mean.
+```{r}
+mean.nomaxandmin <- function (vec) {
+  sorted_vec <- sort(vec) 
+   n <- length(sorted_vec)
+  ignored_vec <- sorted_vec[2:(n-1)] 
+  mean(ignored_vec) 
+}
+mean.nomaxandmin(c(2,3,5,8,9))
+```
+
+
+#3.Read about piping from here:https://r4ds.had.co.nz/pipes.html#pipes (you don’t have
+
+The pipe (%>%) is a useful tool for chaining together short sequences of operations in R. However, for longer sequences with many steps, it's better to use intermediate objects with meaningful names for easier debugging and to communicate intent. Additionally, if you have multiple inputs or outputs or a complex dependency structure, it's best not to use pipes, as they are fundamentally linear and may result in confusing code.
+
+#4. Familiarize yourself with the apply-family of functions (apply, lapply, sapply etc.)http://uc-r.github.io/apply_family, Write a short explanation (max. 300 characters, no spaces) of why they could be useful in your work.
+
+The apply-family functions in R, such as apply(), sapply(), and lapply(), can assist in bioinformatic analysis by enabling efficient and automated processing of large datasets. These functions allow for the application of a function to subsets of data, matrices, or arrays, making it easier to analyze and manipulate complex biological data.
+
+
+# Task 7 - Basic visualization with R
+# 1.1. Compare the distributions of the body heights of the two species from the 'magic_guys.csv' dataset graphically
+
+
+```{r}
+library(remotes) 
+magic_guys <- read.csv("magic_guys.csv")
+head(magic_guys)
+```
+
+#a. using the basic 'hist' function as well as ‘ggplot’ and ‘geom_histogram’ functions from the ggplot2 package. Optimize the plots for example by trying several different 'breaks'. Note that ggplot2-based functions give you many more options for changing the visualization parameters, try some of them.
+
+```{r}
+tapply(magic_guys$length, magic_guys$species, hist)
+
+j.length <- as.data.frame(subset(magic_guys, species == "jedi")$length)
+s.length <- as.data.frame(subset(magic_guys, species == "sith")$length)
+
+ggplot(j.length, aes(x = subset(magic_guys, species == "jedi")$length)) + geom_histogram()
+ggplot(s.length, aes(x = subset(magic_guys, species == "sith")$length)) + geom_histogram()
+
+```
+
+
+#b. Do the same comparison as in a. but with boxplots. If you want to use the ggplot2-package, use the functions ‘ggplot’ and ‘geom_boxplot’.
+
+
+```{r}
+png("boxplot.png")
+pdf("boxplot.png")
+svg("boxplot.png")
+ggplot(magic_guys, aes(y = length, group=species)) +
+ geom_boxplot()
+
+dev.off()
+```
+
+#c. Save the plots with the ‘png’, ‘pdf’, and ‘svg’ formats. In which situation would you use which file format?
+If one needs a high-quality image for printing or publication, PDF may be the best choice. If one needs an image for the web or for interactive purposes, SVG may be a better choice. If one needs a small, portable image for sharing or embedding, PNG may be a good choice.
+
+#2. Load the gene expression data matrix from the ‘microarray_data.tab’ dataset provided in the shared folder, it is a big tabular separated matrix.
+```{r}
+array <- read.table("microarray_data.tab", sep="\t", header=TRUE)
+```
+
+#a. How big is the matrix in terms of rows and columns?
+```{r}
+dim(array)
+```
+
+#b. Count the missing values per gene and visualize this result.
+```{r}
+missing_values <- colSums(is.na(array))
+
+print(missing_values)
+```
+
+c. Find the genes for which there are more than X% (X=10%, 20%, 50%) missing values.
+```{r}
+missing_percent <- colMeans(is.na(array)) * 100
+
+# Find the genes with more than 10%, 20%, and 50% missing values
+genes_10percent <- names(missing_percent[missing_percent > 10])
+genes_20percent <- names(missing_percent[missing_percent > 20])
+genes_50percent <- names(missing_percent[missing_percent > 50])
+
+# Print the result
+cat("Genes with more than 10% missing values:", genes_10percent, "\n")
+cat("Genes with more than 20% missing values:", genes_20percent, "\n")
+cat("Genes with more than 50% missing values:", genes_50percent, "\n")
+
+```
+
+d. Replace the missing values by the average expression value for the particular gene. (Note: Imputing data has to be used with caution!)
+```{r}
+array.new <- apply(array, 2, function(x) replace(x, is.na(x), mean(x, na.rm = TRUE)))
+```
+
+#3. Visualize the data in the CO2 dataset in a way that gives you a deeper understanding of the data. What do you see?
+Chilling treatment will lower the uptake of CO2, especially in Mississippi, but it has no significant effect on CO2 concentration. 
+
+```{r}
+ggplot (subset(CO2, Type=="Quebec"), aes(y=uptake,  color=Treatment)) + geom_boxplot() 
+ggplot (subset(CO2, Type=="Mississippi"), aes(y=uptake,  color=Treatment)) + geom_boxplot()
+ggplot (subset(CO2, Type=="Quebec"), aes(y=conc,  color=Treatment)) + geom_boxplot()
+ggplot (subset(CO2, Type=="Mississippi"), aes(y=conc,  color=Treatment)) + geom_boxplot()
+```
+
+#Task 8
+
+#1. Install the Tidybiology package, which includes the data ‘chromosome’ and ‘proteins’
+```{r}
+library(devtools)
+devtools::install_github("hirscheylab/tidybiology")
+force=TRUE
+library(tidybiology)
+```
+       
+#a. Extract summary statistics (mean, median and maximum) for the following variables from the ‘chromosome’ data: variations, protein coding genes, and miRNAs. Utilize the tidyverse functions to make this as simply as possible.
+```{r}
+summary(chromosome$variations)
+summary(chromosome$protein_codinggenes)
+summary(chromosome$mi_rna)
+summary(chromosome)
+```
+
+#b. How does the chromosome size distribute? Plot a graph that helps to visualize this by using ggplot2 package functions.
+```{r}
+ggplot(chromosome, aes(x=basepairs)) + geom_histogram(bins = 10)
+```
+
+#c. Does the number of protein coding genes or miRNAs correlate with the length of the chromosome? Make two separate plots to visualize these relationships.
+It seems miRNA correlates more than the length of chromosome with number of protein coding genes.
+```{r}
+ggplot(chromosome, aes(x=protein_codinggenes, y=mi_rna)) + geom_point()
+ggplot(chromosome, aes(x=protein_codinggenes, y=length_mm)) + geom_point()
+```
+#d. Calculate the same summary statistics for the ‘proteins’ data variables length and mass. Create a meaningful visualization of the relationship between these two variables by utilizing the ggplot2 package functions. Play with the colors, theme- and other visualization parameters to create a plot that pleases you.
+
+```{r}
+summary(proteins$length)
+summary(proteins$mass)
+
+?ggplot()
+ggplot(proteins, aes(x=length, y=mass)) + geom_point(color="red")
+
+```
+
